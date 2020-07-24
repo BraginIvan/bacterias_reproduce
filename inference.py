@@ -1,16 +1,14 @@
 from utils.gpu_memory import gpu_memory_settings
-
-gpu_memory_settings()
 from segmentation.data_loader import Dataset
 import numpy as np
 import cv2
-from pathlib import Path
 from keras.models import load_model
 import os
 import efficientnet.keras
+from utils.constants import dataset_path
 
-dataset_path = Path('/home/ivan/projects/its/dataset_its/')
-versions = 2
+gpu_memory_settings()
+versions = 3
 dataset = Dataset(mode='test', dataset_path=dataset_path)
 data = dataset.to_list()
 imgs = data[0]
