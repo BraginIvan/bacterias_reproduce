@@ -33,8 +33,8 @@ def run(config, version):
     dice_loss = DiceLoss(beta=1.0, per_image=True)
     focal_loss = BinaryFocalLoss(gamma=5)
     cee_loss = WeightedBinaryCELoss()
-    if not os.path.exists(f'{str(version)}/dice_ft_cee_v{str(version)}.h5'):
 
+    if not os.path.exists(f'{str(version)}/dice_tmp1_v{str(version)}.h5'):
         # warmup decoder
         optim = keras.optimizers.Adam()
         model.compile(optim, dice_loss)
@@ -53,6 +53,11 @@ def run(config, version):
             steps_per_epoch=len(train_data),
             epochs=100,
         )
+        model.save(f'{str(version)}/dice_tmp1_v{str(version)}.h5')
+
+
+    if not os.path.exists(f'{str(version)}/dice_tmp2_v{str(version)}.h5'):
+        model.load_weights(f'{str(version)}/dice_tmp1_v{str(version)}.h5')
 
         # training model with lr decay
         optim = keras.optimizers.Adam()
@@ -63,9 +68,12 @@ def run(config, version):
             epochs=200,
             callbacks=[keras.callbacks.ReduceLROnPlateau(factor=0.7, patience=6, monitor='iou_score0.5', verbose=3,
                                                          mode='max')],
-
         )
+        model.save(f'{str(version)}/dice_tmp2_v{str(version)}.h5')
 
+
+    if not os.path.exists(f'{str(version)}/dice_ft_cee_v{str(version)}.h5'):
+        model.load_weights(f'{str(version)}/dice_tmp2_v{str(version)}.h5')
         optim = keras.optimizers.Adam()
         model.compile(optim, dice_loss+cee_loss, [IOUScore()])
         model.fit_generator(
