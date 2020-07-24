@@ -1,9 +1,13 @@
 from segmentation.train_dice import run as run_dice
-from pathlib import Path
+from argparse import ArgumentParser
+from utils.constants import dataset_path
 
-dataset_path = Path('/home/ivan/projects/its/dataset_its/')
+parser = ArgumentParser()
+parser.add_argument("-id")
+args = parser.parse_args()
+
 config_dice = {
     'dataset_path': dataset_path
 }
-for version in range(10):
-    run_dice(config_dice, version)
+
+run_dice(config_dice, int(args.id))

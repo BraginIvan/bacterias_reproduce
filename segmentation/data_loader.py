@@ -39,7 +39,6 @@ def read_img(path):
     img = cv2.imread(path)
     return img
 
-
 def get_pathes(mode, dataset_path):
     path = dataset_path / mode
     imgs_paths = glob(str(path / '*.png'))
