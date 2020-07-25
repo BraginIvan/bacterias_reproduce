@@ -3,8 +3,7 @@ import numpy as np
 import base64
 
 images_to_process = range(1, 107 + 1)
-# images_to_process = [22]
-# show verbose 0 or 1 or 2 or 3
+# show verbose 0 or 1 or 2 or 3 or 4
 show = 0
 
 # leak was shifted by 4 pixels
@@ -75,16 +74,16 @@ with open('pngs.txt', 'w') as pngs:
                 if min(pixels_count_gt, pixels_count_pred) / max(pixels_count_gt, pixels_count_pred) > 0.3: #0.5
                     break
             # print(model_n)
-            # if show > 1:
-            #     cv2.imshow('leak_counter', leak_counter)
-            #     cv2.imshow('leak_counter_clear', leak_counter_clear)
-            #     cv2.imshow('leak_counter_dilated', leak_counter_dilated)
-            #     cv2.imshow('focal1_img_512_counter', focal1_img_512_counter)
-            #     cv2.imshow('focal2_img_512_counter', focal2_img_512_counter)
-            #     cv2.imshow('focal3_img_512_counter', focal3_img_512_counter)
-            #     cv2.imshow('focal4_img_512_counter', focal4_img_512_counter)
-            #     cv2.imshow('img_512_counter', img_512_counter)
-            #     cv2.waitKey(0)
+            if show > 1:
+                cv2.imshow('leak_counter', leak_counter)
+                cv2.imshow('leak_counter_clear', leak_counter_clear)
+                cv2.imshow('leak_counter_dilated', leak_counter_dilated)
+                cv2.imshow('focal1_img_512_counter', focal1_img_512_counter)
+                cv2.imshow('focal2_img_512_counter', focal2_img_512_counter)
+                cv2.imshow('focal3_img_512_counter', focal3_img_512_counter)
+                cv2.imshow('focal4_img_512_counter', focal4_img_512_counter)
+                cv2.imshow('img_512_counter', img_512_counter)
+                cv2.waitKey(0)
 
             # if the leak in the edge, part of it can be removed, we want to try to pad it back
             if left_x < 3 or top_y < 3 or right_x > 512 - 3 or bottom_y > 512 - 3:
@@ -104,9 +103,9 @@ with open('pngs.txt', 'w') as pngs:
                         padded_image[bottom_y + bias + pad - 1] = padded_image[bottom_y + bias - 1]
                     elif right_x > 512 - 3:
                         padded_image[:, right_x + bias + pad - 1] = padded_image[:, right_x + bias - 1]
-                    # uncomment to see what it does
-                    # cv2.imshow('padded_image', padded_image)
-                    # cv2.waitKey(0)
+                    if show > 3:
+                        cv2.imshow('padded_image', padded_image)
+                        cv2.waitKey(0)
 
                 # MAIN PART OF THE ALGORITHM (FIND SHIFTS)
                 for x in range(bias * 2):
@@ -143,21 +142,15 @@ with open('pngs.txt', 'w') as pngs:
                             best_x, best_y = pairs[len(pairs) // 2]
 
                     best_fit = padded_image[best_y:best_y + 512, best_x:best_x + 512].copy()
-                    err = np.sum(np.abs(best_fit - img_512_counter)) / 255
-                    if err > err_max:
-                        # error should not be changed
-                        print(i, 'best', err, err_max)
 
             best_fit_512[best_fit > 0] = 255
 
-        # separate merged contours
+        # separate merged contours (just replace leak with predictions)
         fn = np.clip(best_fit_512 - cee_img_512, 0, 255)
         fp = np.clip(cee_img_512 - best_fit_512, 0, 255)
         diff = (np.abs(cee_img_512 / 255 - best_fit_512 / 255) * 255).astype('uint8')
         diff_dilated=cv2.dilate(diff, kernel=np.ones((2,2)))
         contours, _ = cv2.findContours(diff_dilated, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
-
-
         for i in range(len(contours)):
             c = contours[i]
             c = c.reshape((-1, 2))
@@ -165,6 +158,7 @@ with open('pngs.txt', 'w') as pngs:
             right_x, bottom_y = np.max(counter, axis=0)
             contour_shape = (right_x - left_x) * (bottom_y - top_y)
             if contour_shape > 1000:
+                # it always try to separate big ones
                 continue
             contour_img = np.zeros((512, 512))
             hullIndex = cv2.convexHull(c, returnPoints=False)
@@ -176,17 +170,14 @@ with open('pngs.txt', 'w') as pngs:
                 fpe = fp.copy()
                 fne[contour_img_diff == 0]=0
                 fpe[contour_img_diff == 0]=0
-
                 fnsum = np.sum(fne / 255)
                 fpsum = np.sum(fpe / 255)
-
                 if fnsum+fpsum == 0:
                     continue
-
                 if min(fnsum, fpsum) / max(fnsum, fpsum) > 0.35:
                     best_fit_512[contour_img_diff > 0] = cee_img_512[contour_img_diff > 0]
 
-        # if edge is lost
+        # if edge is lost replace pixel 1 with pixel 2 and pixel 512 with pixel 511 in case of long white lines
         if np.sum(best_fit_512[:, 511][best_fit_512[:, 510] > 0]) == 0 and np.sum(best_fit_512[:, 510]) > 0:
             line = cv2.erode(best_fit_512[:, 510], np.ones((5, 1)), iterations=1)
             line = cv2.dilate(line, np.ones((5)), iterations=1)
@@ -204,8 +195,8 @@ with open('pngs.txt', 'w') as pngs:
             line = cv2.dilate(line, np.ones((5)), iterations=1)
             best_fit_512[511] = line[:, 0]
 
-        # if on pixels around leak edge (512+-) there is a mask check if it is in the leak (before 512)
-        # if not, remove it on
+        # if there are predicted pixels near leak edge (512+-) check if it is in the leak (before 512)
+        # if not, remove it
         contours, _ = cv2.findContours(cee_img, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         for i in range(len(contours)):
             counter = contours[i]

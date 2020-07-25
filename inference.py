@@ -8,7 +8,7 @@ import efficientnet.keras
 from utils.constants import dataset_path
 
 gpu_memory_settings()
-versions = 3
+versions = 6
 dataset = Dataset(mode='test', dataset_path=dataset_path)
 data = dataset.to_list()
 imgs = data[0]
