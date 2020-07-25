@@ -260,4 +260,4 @@ with open('pngs.txt', 'w') as pngs:
         if np.sum(delta) > 0:
             print('all', np.sum(leak_img_512)//255)
             print('diff', np.sum(delta)//255)
-            cv2.waitKey(0)
+            # cv2.waitKey(0)

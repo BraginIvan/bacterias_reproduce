@@ -22,7 +22,7 @@ def tta_predict(m, imgs):
     pred_v_flip = m.predict(imgs[:, ::-1, :, :], batch_size=bs)[:, ::-1, :, :]
     pred_hv_flips = m.predict(imgs[:, ::-1, ::-1, :], batch_size=bs)[:, ::-1, ::-1, :]
     ps = [pred, pred_h_flip, pred_v_flip, pred_hv_flips]
-    return np.median(ps, axis=0)
+    return np.mean(ps, axis=0)
 
 
 for model_type in ['dice_ft_cee', 'dice_ft_focal1', 'dice_ft_focal2', 'dice_ft_focal3', 'dice_ft_focal4']:
