@@ -225,39 +225,3 @@ with open('pngs.txt', 'w') as pngs:
         with open(filename, 'rb') as fp:
             encoded_string = base64.b64encode(fp.read()).decode('utf-8')
             pngs.write(str(encoded_string) + "\n")
-
-        # testing
-        # cv2.imwrite(f"best_fit/{name}.png", best_fit)
-        cv2.imshow('best_fit', best_fit)
-        cv2.imshow('leak_img_512', leak_img_512)
-        old_predict = cv2.imread(f'best_fit/{name}.png', 0)
-        from utils.constants import dataset_path
-
-        orig = cv2.imread(f'{dataset_path}/test/{name}.png')
-
-        orig2 = orig.copy()
-        orig3 = orig.copy()
-        orig4 = orig.copy()
-
-        contour_img = orig2[:, :, 1]
-        contour_img[old_predict == 255] = 125
-        orig2[:, :, 1] = contour_img
-        cv2.imshow('old', orig2)
-
-        contour_img = orig3[:, :, 1]
-        contour_img[best_fit == 255] = 125
-        orig3[:, :, 1] = contour_img
-        cv2.imshow('new', orig3)
-
-        delta = (np.abs(best_fit / 255 - old_predict / 255) * 255).astype('uint8')
-
-        contour_img = orig4[:, :, 1]
-        contour_img[delta == 255] = 125
-        orig4[:, :, 1] = contour_img
-        cv2.imshow('old_new_diff', orig4)
-
-        cv2.imshow('delta', delta)
-        if np.sum(delta) > 0:
-            print('all', np.sum(leak_img_512)//255)
-            print('diff', np.sum(delta)//255)
-            # cv2.waitKey(0)
