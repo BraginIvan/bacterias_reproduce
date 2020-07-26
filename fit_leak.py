@@ -70,8 +70,8 @@ with open('pngs.txt', 'w') as pngs:
             for model_n, img_512_counter in enumerate(
                     [focal1_img_512_counter, focal2_img_512_counter, focal3_img_512_counter, focal4_img_512_counter]):
                 pixels_count_gt = len(leak_counter_clear[leak_counter_clear > 0])
-                pixels_count_pred = len(img_512_counter[img_512_counter > 127]) #0
-                if min(pixels_count_gt, pixels_count_pred) / max(pixels_count_gt, pixels_count_pred) > 0.3: #0.5
+                pixels_count_pred = len(img_512_counter[img_512_counter > 0]) #0
+                if min(pixels_count_gt, pixels_count_pred) / max(pixels_count_gt, pixels_count_pred) > 0.5: #0.5
                     break
             # print(model_n)
             if show > 1:
